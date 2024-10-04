@@ -1,13 +1,14 @@
+import numpy as np
+import pandas as pd
+from sklearn.preprocessing import LabelEncoder
+from sklearn.model_selection import train_test_split
+from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.neural_network import MLPClassifier
 from sklearn.tree import DecisionTreeClassifier
-from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score
-from sklearn.model_selection import train_test_split
-from sklearn.preprocessing import LabelEncoder
-from sklearn.ensemble import IsolationForest
 from ucimlrepo import fetch_ucirepo
-import pandas as pd
-import numpy as np
+
+from models.game_state import GameState
 
 class DatasetAdapter:
     def __init__(self):
@@ -16,33 +17,73 @@ class DatasetAdapter:
         self.features = self.tic_tac_toe_endgame.data['features']
         self.target = self.tic_tac_toe_endgame.data['targets']
 
-        # Reduzir o dataset para 400 linhas
-        combined_data = pd.concat([self.features, self.target], axis=1)
-        combined_data = combined_data.sample(n=400, random_state=42)
-        
-        self.features = combined_data.iloc[:, :-1]
-        self.target = combined_data.iloc[:, -1]
+        data = pd.concat([self.features, self.target], axis=1)
+        positive_samples = data[data['class'] == 'positive']
+        negative_samples = data[data['class'] == 'negative']
 
-        # Aplicar LabelEncoder antes do tratamento de outliers
+        n_samples = min(len(positive_samples), len(negative_samples), 400)
+        positive_samples = positive_samples.sample(n=n_samples, random_state=42)
+        negative_samples = negative_samples.sample(n=n_samples, random_state=42)
+
+        combined_data = pd.concat([positive_samples, negative_samples])
+
+        self.features = combined_data.drop(columns=['class'])
+        self.target = combined_data['class']
+
         self.features = self.features.apply(LabelEncoder().fit_transform)
-        self.target = LabelEncoder().fit_transform(self.target.values.ravel())
+        self.target = self.target.apply(lambda x: self.map_class(x, self.features.loc[self.target.index[self.target == x]].iloc[0]))
 
-        # Tratar dados ruidosos usando Isolation Forest
-        iso_forest = IsolationForest(contamination=0.1, random_state=42)
-        outlier_labels = iso_forest.fit_predict(self.features)
-        
-        # Remover outliers
-        clean_indices = np.where(outlier_labels != -1)[0]
-        self.features = self.features.iloc[clean_indices]
-        self.target = self.target[clean_indices]
+        self.target = self.target.apply(lambda x: x.to_string())  # Convert GameState to integer values
 
-        # Divisão em treino, validação e teste
+        pd.set_option('display.max_columns', None)
+        pd.set_option('display.width', None)
+        print(pd.concat([self.features, self.target], axis=1))
+
         X_temp, self.X_test, y_temp, self.y_test = train_test_split(
             self.features, self.target, test_size=0.2, random_state=42
         )
         self.X_train, self.X_val, self.y_train, self.y_val = train_test_split(
             X_temp, y_temp, test_size=0.25, random_state=42
         )
+
+    def map_class(self, state, row):
+        if state == 'positive':
+            return GameState.X_WON
+        elif state == 'negative':
+            return self.determine_negative_state(row)
+        else:
+            return GameState.NOT_OVER
+
+    def determine_negative_state(self, row):
+        board = row.values.reshape(3, 3)
+        if self.check_draw(board):
+            return GameState.DRAW
+        else:
+            return GameState.O_WON
+
+    def check_draw(self, board):
+        for i in range(3):
+            if board[i][0] == board[i][1] == board[i][2] != ' ':
+                return False
+            if board[0][i] == board[1][i] == board[2][i] != ' ':
+                return False
+        
+        if board[0][0] == board[1][1] == board[2][2] != ' ':
+            return False
+        if board[0][2] == board[1][1] == board[2][0] != ' ':
+            return False
+        
+        all_filled = all(cell != ' ' for row in board for cell in row)
+
+        return all_filled
+
+    def check_status(self, board, model):
+        board_flat = np.array(board).flatten()
+        board_encoded = LabelEncoder().fit_transform(board_flat).reshape(1, -1)
+
+        prediction = model.predict(board_encoded)[0]
+
+        return GameState(prediction)
 
     def evaluate_model(self, model):
         model.fit(self.X_train, self.y_train)
@@ -61,12 +102,12 @@ class DatasetAdapter:
         }
 
     def evaluate_all_models(self):
-        knn = KNeighborsClassifier(n_neighbors=3)
-        mlp = MLPClassifier(random_state=42)
+        knn  = KNeighborsClassifier(n_neighbors=3)
+        mlp  = MLPClassifier(random_state=42)
         tree = DecisionTreeClassifier(random_state=42)
 
-        knn_metrics = self.evaluate_model(knn)
-        mlp_metrics = self.evaluate_model(mlp)
+        knn_metrics  = self.evaluate_model(knn)
+        mlp_metrics  = self.evaluate_model(mlp)
         tree_metrics = self.evaluate_model(tree)
 
         return {
@@ -74,3 +115,21 @@ class DatasetAdapter:
             'mlp': mlp_metrics,
             'decision_tree': tree_metrics
         }
+    
+    def get_best_model(self):
+        knn = KNeighborsClassifier(n_neighbors=3)
+        mlp = MLPClassifier(random_state=42)
+        tree = DecisionTreeClassifier(random_state=42)
+
+        models = [knn, mlp, tree]
+
+        best_model = None
+        best_accuracy = 0
+
+        for model in models:
+            metrics = self.evaluate_model(model)
+            if metrics['accuracy'] > best_accuracy:
+                best_accuracy = metrics['accuracy']
+                best_model = model
+
+        return best_model
