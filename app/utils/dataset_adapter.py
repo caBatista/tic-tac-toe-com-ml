@@ -17,6 +17,7 @@ class DatasetAdapter:
         self.features = self.tic_tac_toe_endgame.data['features']
         self.target = self.tic_tac_toe_endgame.data['targets']
 
+        # Combinar e balancear amostras
         data = pd.concat([self.features, self.target], axis=1)
         positive_samples = data[data['class'] == 'positive']
         negative_samples = data[data['class'] == 'negative']
@@ -32,12 +33,6 @@ class DatasetAdapter:
 
         self.features = self.features.apply(LabelEncoder().fit_transform)
         self.target = self.target.apply(lambda x: self.map_class(x, self.features.loc[self.target.index[self.target == x]].iloc[0]))
-
-        self.target = self.target.apply(lambda x: x.to_string())  # Convert GameState to integer values
-
-        pd.set_option('display.max_columns', None)
-        pd.set_option('display.width', None)
-        print(pd.concat([self.features, self.target], axis=1))
 
         X_temp, self.X_test, y_temp, self.y_test = train_test_split(
             self.features, self.target, test_size=0.2, random_state=42
@@ -56,26 +51,34 @@ class DatasetAdapter:
 
     def determine_negative_state(self, row):
         board = row.values.reshape(3, 3)
-        if self.check_draw(board):
+        if self.check_winner(board, 'O'):
+            return GameState.O_WON
+        elif self.check_winner(board, 'X'):
+            return GameState.X_WON
+        elif self.check_draw(board):
             return GameState.DRAW
         else:
-            return GameState.O_WON
+            return GameState.NOT_OVER
+
+    def check_winner(self, board, player):
+        # Verificar linhas e colunas
+        for i in range(3):
+            if all(board[i][j] == player for j in range(3)):
+                return True
+            if all(board[j][i] == player for j in range(3)):
+                return True
+
+        # Verificar diagonais
+        if all(board[i][i] == player for i in range(3)):
+            return True
+        if all(board[i][2-i] == player for i in range(3)):
+            return True
+
+        return False
 
     def check_draw(self, board):
-        for i in range(3):
-            if board[i][0] == board[i][1] == board[i][2] != ' ':
-                return False
-            if board[0][i] == board[1][i] == board[2][i] != ' ':
-                return False
-        
-        if board[0][0] == board[1][1] == board[2][2] != ' ':
-            return False
-        if board[0][2] == board[1][1] == board[2][0] != ' ':
-            return False
-        
-        all_filled = all(cell != ' ' for row in board for cell in row)
-
-        return all_filled
+        # Verifica se todas as células estão preenchidas sem um vencedor
+        return all(cell != ' ' for row in board for cell in row) and not self.check_winner(board, 'X') and not self.check_winner(board, 'O')
 
     def check_status(self, board, model):
         board_flat = np.array(board).flatten()
