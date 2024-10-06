@@ -21,6 +21,7 @@ def predict_game_status():
         return jsonify(e.errors()), 400
 
     best_model = dataset_adapter.get_best_model()
-    status = dataset_adapter.check_status(board.board, best_model)
+    # status = dataset_adapter.check_status(board.board, best_model)
+    status = dataset_adapter.check_tic_tac_toe_status(board.board)
 
     return jsonify({"status": status.to_string(), "model_used": "none"})
