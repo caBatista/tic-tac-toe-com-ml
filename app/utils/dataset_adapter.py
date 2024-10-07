@@ -126,8 +126,8 @@ class DatasetAdapter:
         }
     
     def get_best_model(self):
-        knn = KNeighborsClassifier(n_neighbors=3)
-        mlp = MLPClassifier(random_state=42, max_iter=1000)
+        knn = KNeighborsClassifier(metric='manhattan')
+        mlp = MLPClassifier(activation='tanh', max_iter=1000, random_state=42)
         tree = DecisionTreeClassifier(random_state=42)
 
         models = [knn, mlp, tree]
