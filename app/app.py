@@ -1,8 +1,14 @@
 from flask import Flask
-from routers.game import game_bp
+from flask_restx import Api, Resource
+from routers.game import api as game_ns
 
 app = Flask(__name__)
-app.register_blueprint(game_bp, url_prefix='/game')
+api = Api(app, 
+          title='Tic Tac Toe com ML',
+          base_url='localhost:5000',
+          description='Trabalho prático da disciplina de Inteligência Artificial.',
+          doc='/docs') 
+api.add_namespace(game_ns, path='/game')
 
 if __name__ == '__main__':
     app.run(debug=True)
