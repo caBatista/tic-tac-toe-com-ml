@@ -8,10 +8,10 @@ class GameState(Enum):
 
     def to_string(self):
         if self == GameState.X_WON:
-            return "xwon"
+            return "X_WON"
         elif self == GameState.O_WON:
-            return "owon"
+            return "O_WON"
         elif self == GameState.DRAW:
-            return "draw"
+            return "DRAW"
         elif self == GameState.NOT_OVER:
-            return "nver"
+            return "NOT_OVER"
