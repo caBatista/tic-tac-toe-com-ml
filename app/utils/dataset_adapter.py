@@ -1,5 +1,6 @@
 import numpy as np
 import pandas as pd
+from sklearn.discriminant_analysis import StandardScaler
 from sklearn.preprocessing import LabelEncoder
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score
@@ -26,8 +27,8 @@ class DatasetAdapter:
         positive_samples = positive_samples.sample(n=n_samples, random_state=42)
         negative_samples = negative_samples.sample(n=n_samples, random_state=42)
 
-        combined_data = pd.concat([negative_samples])
-        print(combined_data)
+        combined_data = pd.concat([positive_samples, negative_samples])
+        combined_data = combined_data.apply(lambda x: self.map_class(x), axis=1)
 
         self.features = combined_data.drop(columns=['class'])
         self.target = combined_data['class']
@@ -36,9 +37,10 @@ class DatasetAdapter:
         le.fit(['x', 'o', 'b'])
 
         self.features = self.features.apply(le.fit_transform)
-        self.target = self.target.apply(lambda x: self.map_class(x, self.features.loc[self.target.index[self.target == x]].iloc[0]))
-
         self.target = self.target.apply(lambda x: x.to_string())  
+
+        scaler = StandardScaler()
+        self.features = scaler.fit_transform(self.features)
 
         X_temp, self.X_test, y_temp, self.y_test = train_test_split(
             self.features, self.target, test_size=0.2, random_state=42
@@ -46,63 +48,40 @@ class DatasetAdapter:
         self.X_train, self.X_val, self.y_train, self.y_val = train_test_split(
             X_temp, y_temp, test_size=0.25, random_state=42
         )
-        train_data = pd.DataFrame(self.X_train)
-        train_data['target'] = self.y_train
 
-        val_data = pd.DataFrame(self.X_val)
-        val_data['target'] = self.y_val
-
-        train_data.to_csv('train_dataset.csv', index=False)
-
-        val_data.to_csv('val_dataset.csv', index=False)
-
-    def map_class(self, state, row):
-        if state == 'positive':
-            return GameState.X_WON
-        else:
-            return self.determine_negative_state(row)
-
-    def determine_negative_state(self, row):
-        board = row.values.reshape(3, 3)
-        return self.check_tic_tac_toe_status(board)
+    def map_class(self, row):
+        state = row['class']
         
+        if state == 'positive':
+            new_state = GameState.X_WON
+            row['class'] = new_state
+            return row
+        else:
+            row = row.drop('class')
+            board = row.values.reshape(3, 3)
+
+            new_state = self.check_tic_tac_toe_status(board)
+            row['class'] = new_state
+
+            return row   
 
     def check_tic_tac_toe_status(self, board):
-        # print(board)
         for i in range(3):
-            if board[i][0] == board[i][1] == board[i][2] != 2:
-                return GameState.X_WON if board[i][0] == 0 else GameState.O_WON
-            if board[0][i] == board[1][i] == board[2][i] != 2:
-                return GameState.X_WON if board[0][i] == 0 else GameState.O_WON
+            if board[i][0] == board[i][1] == board[i][2] != 'b':
+                return GameState.X_WON if board[i][0] == 'x' else GameState.O_WON
+            if board[0][i] == board[1][i] == board[2][i] != 'b':
+                return GameState.X_WON if board[0][i] == 'x' else GameState.O_WON
 
-        # Check diagonals for a winner
-        if board[0][0] == board[1][1] == board[2][2] != 2:
-            return GameState.X_WON if board[0][0] == 0 else GameState.O_WON
-        if board[0][2] == board[1][1] == board[2][0] != 2:
-            return GameState.X_WON if board[0][2] == 0 else GameState.O_WON
+        if board[0][0] == board[1][1] == board[2][2] != 'b':
+            return GameState.X_WON if board[0][0] == 'x' else GameState.O_WON
+        if board[0][2] == board[1][1] == board[2][0] != 'b':
+            return GameState.X_WON if board[0][2] == 'x' else GameState.O_WON
 
-        # Check for a draw or if the game is still ongoing
         for row in board:
-            if 2 in row:  # If there's an empty space, the game is not over
+            if 'b' in row:
                 return GameState.NOT_OVER
             
         return GameState.DRAW
-
-    def check_draw(self, board):
-        for i in range(3):
-            if board[i][0] == board[i][1] == board[i][2] != ' ':
-                return False
-            if board[0][i] == board[1][i] == board[2][i] != ' ':
-                return False
-        
-        if board[0][0] == board[1][1] == board[2][2] != ' ':
-            return False
-        if board[0][2] == board[1][1] == board[2][0] != ' ':
-            return False
-        
-        all_filled = all(cell != 'b' for row in board for cell in row)
-
-        return all_filled
 
     def check_status(self, board, model):
         board_flat = np.array(board).flatten()
@@ -120,9 +99,9 @@ class DatasetAdapter:
         predicao = model.predict(self.X_val)
         
         accuracy = accuracy_score(self.y_val, predicao)
-        precision = precision_score(self.y_val, predicao, average='weighted')
-        recall = recall_score(self.y_val, predicao, average='weighted')
-        f1 = f1_score(self.y_val, predicao, average='weighted')
+        precision = precision_score(self.y_val, predicao, average='weighted', zero_division=0)
+        recall = recall_score(self.y_val, predicao, average='weighted', zero_division=0)
+        f1 = f1_score(self.y_val, predicao, average='weighted', zero_division=0)
         
         return {
             'accuracy': accuracy,
@@ -133,7 +112,7 @@ class DatasetAdapter:
 
     def evaluate_all_models(self):
         knn  = KNeighborsClassifier(n_neighbors=3)
-        mlp  = MLPClassifier(random_state=42)
+        mlp  = MLPClassifier(random_state=42, max_iter=1000)
         tree = DecisionTreeClassifier(random_state=42)
 
         knn_metrics  = self.evaluate_model(knn)
@@ -148,7 +127,7 @@ class DatasetAdapter:
     
     def get_best_model(self):
         knn = KNeighborsClassifier(n_neighbors=3)
-        mlp = MLPClassifier(random_state=42)
+        mlp = MLPClassifier(random_state=42, max_iter=1000)
         tree = DecisionTreeClassifier(random_state=42)
 
         models = [knn, mlp, tree]
