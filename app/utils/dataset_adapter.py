@@ -7,6 +7,7 @@ from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_sc
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.neural_network import MLPClassifier
 from sklearn.tree import DecisionTreeClassifier
+from sklearn.ensemble import RandomForestClassifier
 from ucimlrepo import fetch_ucirepo
 
 from models.game_state import GameState
@@ -111,26 +112,30 @@ class DatasetAdapter:
         }
 
     def evaluate_all_models(self):
-        knn  = KNeighborsClassifier(n_neighbors=3)
-        mlp  = MLPClassifier(random_state=42, max_iter=1000)
+        knn  = KNeighborsClassifier(metric='manhattan')
+        mlp  = MLPClassifier(activation='tanh', max_iter=1000, random_state=42)
         tree = DecisionTreeClassifier(random_state=42)
+        rf   = RandomForestClassifier(n_estimators=200, random_state=42)
 
         knn_metrics  = self.evaluate_model(knn)
         mlp_metrics  = self.evaluate_model(mlp)
         tree_metrics = self.evaluate_model(tree)
+        rf_metrics   = self.evaluate_model(rf)
 
         return {
             'knn': knn_metrics,
             'mlp': mlp_metrics,
-            'decision_tree': tree_metrics
+            'decision_tree': tree_metrics,
+            'random_forest': rf_metrics
         }
     
     def get_best_model(self):
-        knn = KNeighborsClassifier(metric='manhattan')
-        mlp = MLPClassifier(activation='tanh', max_iter=1000, random_state=42)
+        knn  = KNeighborsClassifier(metric='manhattan')
+        mlp  = MLPClassifier(activation='tanh', max_iter=1000, random_state=42)
         tree = DecisionTreeClassifier(random_state=42)
+        rf   = RandomForestClassifier(n_estimators=200, random_state=42)
 
-        models = [knn, mlp, tree]
+        models = [knn, mlp, tree, rf]
 
         best_model = None
         best_accuracy = 0
