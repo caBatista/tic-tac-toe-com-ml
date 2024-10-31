@@ -71,14 +71,11 @@ class Minimax:
             return best
 
     def find_next_move(self, board, difficulty):
-        if difficulty == 'hard':
-            probability = 100
-        elif difficulty == 'medium':
-            probability = 50
-        elif difficulty == 'easy':
-            probability = 25
-        else:
-            probability = 0
+        match difficulty:
+            case 'hard': probability = 100
+            case 'medium': probability = 50
+            case 'easy': probability = 25
+            case _: probability = 0
 
         if random.randint(0, 100) > probability:
             return self.find_random_move(board), False

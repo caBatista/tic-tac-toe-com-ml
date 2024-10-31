@@ -11,17 +11,18 @@ api = Namespace('game', description='Operações com o jogo da velha')
 checker = BoardChecker()
 minimax = Minimax()
 
-board_model = api.model('Board', {
+status_model = api.model('Board', {
     'board': fields.List(fields.List(fields.String, required=True), required=True, description='Board data in JSON format', example=[
-        ['x', 'o', 'x'],
-        ['o', 'x', 'o'],
-        ['x', 'o', 'x']
-    ])
+        ['x', 'b', 'b'],
+        ['b', 'o', 'b'],
+        ['b', 'b', 'x']
+    ]),
+    'difficulty': fields.String(required=True, description='Game`s difficulty', example='hard')
 })
 
 @api.route('/status')
 class Status(Resource):
-    @api.expect(board_model)
+    @api.expect(status_model)
     def post(self):
         args = api.payload
         board_data = args['board']
@@ -35,8 +36,6 @@ class Status(Resource):
         status = checker.check_status(board.board)
         next_move = None
         used_minimax = False
-
-        print(status)
 
         if(status == GameState.NOT_OVER):
             next_move, used_minimax = minimax.find_next_move(board.board, difficulty)
