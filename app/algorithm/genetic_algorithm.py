@@ -6,7 +6,7 @@ from models.game_state import GameState
 from models.neural_network import NeuralNetwork
 
 class GeneticAlgorithm:
-    def __init__(self, population_size=100, mutation_rate=0.01, crossover_rate=0.7):
+    def __init__(self, population_size=200, mutation_rate=0.01, crossover_rate=1):
         self.population_size = population_size
         self.mutation_rate = mutation_rate
         self.crossover_rate = crossover_rate
@@ -22,6 +22,7 @@ class GeneticAlgorithm:
     def calculate_fitness(self, individual, minimax, board_checker):
         """Calcula a aptidao de um individuo."""
         fitness = 0
+        moves = 0
 
         board = [['b'] * 3 for _ in range(3)]
         player = 'x'
@@ -39,15 +40,16 @@ class GeneticAlgorithm:
                 move, _ = minimax.find_next_move(board, difficulty)
                 board[move[0]][move[1]] = 'o'
 
+            moves += 1
             player = 'o' if player == 'x' else 'x'
 
             final_state = board_checker.check_status(board)
             if final_state == GameState.O_WON:
-                fitness = 0
+                fitness = 0 + moves
             elif final_state == GameState.DRAW:
-                fitness = 50
+                fitness = 41 + moves
             elif final_state == GameState.X_WON:
-                fitness = 100
+                fitness = 91 + moves
 
         return fitness
 
@@ -73,6 +75,10 @@ class GeneticAlgorithm:
             individual.hidden_output_weights += np.random.normal(0, 0.5, individual.hidden_output_weights.shape)
         return individual
     
+    def adjust_mutation_rate(self, generation, max_generations):
+        """Ajusta a taxa de mutacao."""
+        self.mutation_rate = 0.01 + (0.1 - 0.01) * (1 - generation / max_generations)
+
     def find_best_individual(self):
         """Encontra o melhor individuo da populacao (elitismo)."""
         return max(self.population, key=lambda x: x.fitness)
@@ -98,3 +104,4 @@ class GeneticAlgorithm:
     def find_max_fitness(self):
         """Encontra a maior aptidao da populacao."""
         return max([individual.fitness for individual in self.population])
+    

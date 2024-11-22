@@ -24,6 +24,7 @@ def train_network(ga, minimax, board_checker, generations):
     pool = multiprocessing.Pool()
 
     for generation in range(generations):
+        ga.adjust_mutation_rate(generation, generations)
         results = pool.map(calculate_fitness_parallel, [(individual, ga, minimax, board_checker) for individual in ga.population])
         for i, fitness in enumerate(results):
             ga.population[i].fitness = fitness
