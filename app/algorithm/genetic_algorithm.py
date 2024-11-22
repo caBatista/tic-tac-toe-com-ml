@@ -22,7 +22,6 @@ class GeneticAlgorithm:
     def calculate_fitness(self, individual, minimax, board_checker):
         """Calcula a aptidao de um individuo."""
         fitness = 0
-        moves = 0
 
         board = [['b'] * 3 for _ in range(3)]
         player = 'x'
@@ -40,10 +39,11 @@ class GeneticAlgorithm:
                 move, _ = minimax.find_next_move(board, difficulty)
                 board[move[0]][move[1]] = 'o'
 
-            moves += 1
             player = 'o' if player == 'x' else 'x'
 
             final_state = board_checker.check_status(board)
+            moves = board.count('x') + board.count('o')
+
             if final_state == GameState.O_WON:
                 fitness = 0 + moves
             elif final_state == GameState.DRAW:
