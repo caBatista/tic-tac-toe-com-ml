@@ -1,7 +1,7 @@
 from flask import jsonify
 from pydantic import ValidationError
 from models.game_state import GameState
-from utils.minimax import Minimax
+from app.algorithm.minimax import Minimax
 from models.board import Board
 from utils.board_checker import BoardChecker
 from flask_restx import Namespace, Resource, fields
