@@ -19,12 +19,14 @@ class GeneticAlgorithm:
             individual.fitness = 0
             self.population.append(individual)
 
-    def calculate_fitness(self, individual, minimax, board_checker):
+    def calculate_fitness(self, individual, minimax, board_checker, difficulty):
         """Calcula a aptidao de um individuo."""
         fitness = 0
 
         board = [['b'] * 3 for _ in range(3)]
         player = 'x'
+
+        difficulty_factor = {'easy': .5, 'medium': 1, 'hard': 1.5}[difficulty]
 
         while board_checker.check_status(board) == GameState.NOT_OVER:
             if player == 'x':
@@ -32,10 +34,9 @@ class GeneticAlgorithm:
                 if move:
                     board[move[0]][move[1]] = 'x'
                 else:
-                    fitness -= 100
-                    break
+                    fitness = -100
+                    return fitness
             else: 
-                difficulty = 'medium'
                 move, _ = minimax.find_next_move(board, difficulty)
                 board[move[0]][move[1]] = 'o'
 
@@ -45,13 +46,17 @@ class GeneticAlgorithm:
             moves = board.count('x') + board.count('o')
 
             if final_state == GameState.O_WON:
-                fitness = 0 + moves
+                fitness = 0
             elif final_state == GameState.DRAW:
-                fitness = 41 + moves
+                fitness = 41
             elif final_state == GameState.X_WON:
-                fitness = 91 + moves
+                fitness = 91
 
-        return fitness
+        fitness += moves
+        fitness *= difficulty_factor
+        max_fitness = 100
+
+        return min(fitness, max_fitness)
 
     def select_parents(self):
         """Realiza o torneio para selecao dos pais."""
