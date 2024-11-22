@@ -22,35 +22,32 @@ class GeneticAlgorithm:
     def calculate_fitness(self, individual, minimax, board_checker):
         """Calcula a aptidao de um individuo."""
         fitness = 0
-        for _ in range(10):
-            board = [['b'] * 3 for _ in range(3)]
-            player = 'x'
-            while board_checker.check_status(board) == GameState.NOT_OVER:
-                if player == 'x':
-                    move = individual.find_next_move(board)
-                    if move:
-                        board[move[0]][move[1]] = 'x'
-                    else:
-                        fitness -= 5
-                        break
-                else: 
-                    difficulty = random.choice(['easy', 'medium', 'hard'])
-                    move, _ = minimax.find_next_move(board, difficulty)
-                    board[move[0]][move[1]] = 'o'
 
-                player = 'o' if player == 'x' else 'x'
+        board = [['b'] * 3 for _ in range(3)]
+        player = 'x'
+
+        while board_checker.check_status(board) == GameState.NOT_OVER:
+            if player == 'x':
+                move = individual.find_next_move(board)
+                if move:
+                    board[move[0]][move[1]] = 'x'
+                else:
+                    fitness -= 100
+                    break
+            else: 
+                difficulty = 'medium'
+                move, _ = minimax.find_next_move(board, difficulty)
+                board[move[0]][move[1]] = 'o'
+
+            player = 'o' if player == 'x' else 'x'
 
             final_state = board_checker.check_status(board)
-            win_scores = {'easy': 5, 'medium': 10, 'hard': 15}
-            draw_scores = {'easy': 2, 'medium': 5, 'hard': 8}
-            loss_scores = {'easy': 15, 'medium': 10, 'hard': 5}
-
-            if final_state == GameState.X_WON:
-                fitness += win_scores[difficulty]
+            if final_state == GameState.O_WON:
+                fitness = 0
             elif final_state == GameState.DRAW:
-                fitness += draw_scores[difficulty]
-            elif final_state == GameState.O_WON:
-                fitness -= loss_scores[difficulty]
+                fitness = 50
+            elif final_state == GameState.X_WON:
+                fitness = 100
 
         return fitness
 
