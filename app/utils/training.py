@@ -36,7 +36,7 @@ def train_network(ga, minimax, board_checker, generations):
         avg_fitness = ga.find_avg_fitness()
         max_fitness = ga.find_max_fitness()
         avg_fitnesses.append(avg_fitness)
-        print(f"Generation {generation}: AVG = {avg_fitness} | MAX = {max_fitness}")
+        print(f"Generation {generation}: AVG = {avg_fitness} | MAX = {max_fitness} | DIFF = {difficulty.upper()}")
 
         if avg_fitness > 98:
             weights = []
