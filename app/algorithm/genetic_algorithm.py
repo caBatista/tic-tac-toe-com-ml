@@ -13,6 +13,7 @@ class GeneticAlgorithm:
         self.population = []
 
     def initialize_population(self):
+        """Inicializa a populacao."""
         for _ in range(self.population_size):
             individual = NeuralNetwork()
             individual.fitness = 0

@@ -7,6 +7,7 @@ class GameState(Enum):
     DRAW = 3
 
     def to_string(self):
+        """Retorna o estado em string."""
         if self == GameState.X_WON:
             return "X_WON"
         elif self == GameState.O_WON:

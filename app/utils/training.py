@@ -18,6 +18,7 @@ def calculate_fitness_parallel(args):
     return ga.calculate_fitness(individual, minimax, board_checker)
 
 def train_network(ga, minimax, board_checker, generations):
+    """Treina a rede neural"""
     avg_fitnesses = []
 
     pool = multiprocessing.Pool()
