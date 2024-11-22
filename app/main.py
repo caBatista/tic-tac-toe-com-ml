@@ -11,7 +11,7 @@ def main():
     ga.initialize_population()
 
     print("Iniciando treinamento...")
-    train_network(ga, minimax, board_checker, generations=100)
+    train_network(ga, minimax, board_checker, generations=5000)
 
 if __name__ == "__main__":
     main()
