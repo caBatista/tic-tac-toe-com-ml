@@ -1,3 +1,5 @@
+import csv
+import json
 import multiprocessing
 import matplotlib.pyplot as plt
 
@@ -33,6 +35,20 @@ def train_network(ga, minimax, board_checker, generations):
         max_fitness = ga.find_max_fitness()
         avg_fitnesses.append(avg_fitness)
         print(f"Generation {generation}: AVG = {avg_fitness} | MAX = {max_fitness}")
+
+        if avg_fitness > 91:
+            weights = []
+            for individual in ga.population:
+                weights.append({
+                    'input_hidden_weights': individual.input_hidden_weights.tolist(),
+                    'hidden_output_weights': individual.hidden_output_weights.tolist(),
+                    'hidden_bias': individual.hidden_bias.tolist(),
+                    'output_bias': individual.output_bias.tolist()
+                })
+            with open('generation_weights.json', 'w') as jsonfile:
+                json.dump(weights, jsonfile)
+            print(f"Stopping training as average fitness exceeded 91 in generation {generation}")
+            break
 
         ga.population = ga.selection()
        

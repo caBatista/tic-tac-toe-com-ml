@@ -1,3 +1,4 @@
+import json
 import numpy as np
 
 class NeuralNetwork:
@@ -31,3 +32,20 @@ class NeuralNetwork:
         play = np.argmax(output_data)
         x, y = divmod(play, 3)
         return (x, y) if board[x][y] == 'b' else None
+    
+    def load_network_from_file(file_path):
+        """Carrega a rede neural a partir de um arquivo."""
+        with open(file_path, 'r') as jsonfile:
+            weights = json.load(jsonfile)
+        
+        individual_weights = weights[0]
+        
+        nn = NeuralNetwork()
+        
+        nn.input_hidden_weights = np.array(individual_weights['input_hidden_weights'])
+        nn.hidden_output_weights = np.array(individual_weights['hidden_output_weights'])
+        nn.hidden_bias = np.array(individual_weights['hidden_bias'])
+        nn.output_bias = np.array(individual_weights['output_bias'])
+        
+        return nn
+    
