@@ -22,22 +22,23 @@ def play_parallel(args):
 
 def define_difficulty(fitness):
     if fitness > 80:
-        return random.choices(["hard", "normal"], [0.7, 0.3])[0]
+        return random.choices(["hard", "medium"], [0.7, 0.3])[0]
     elif fitness > 10:
-        return random.choices(["normal", "easy"], [0.8, 0.2])[0]
+        return random.choices(["medium", "easy"], [0.8, 0.2])[0]
     else:
-        return random.choices(["easy", "normal"], [0.8, 0.2])[0]
-
+        return random.choices(["easy", "medium"], [0.8, 0.2])[0]
 
 def train_network(ga, minimax, board_checker, generations):
     """Treina a rede neural"""
     avg_fitnesses = []
+    avg_fitness = -100
+    max_fitness = -100
 
     pool = multiprocessing.Pool()
 
     for generation in range(generations):
         ga.adjust_mutation_rate(generation, generations)
-        difficulty = define_difficulty(ga.find_avg_fitness()) if avg_fitnesses else 'easy'
+        difficulty = define_difficulty(avg_fitness)
         results = pool.map(play_parallel, [(individual, ga, minimax, board_checker, difficulty) for individual in ga.population])
         for i, fitness in enumerate(results):
             ga.population[i].fitness = fitness
