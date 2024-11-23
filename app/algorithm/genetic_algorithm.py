@@ -64,18 +64,21 @@ class GeneticAlgorithm:
 
     def crossover(self, parent1, parent2):
         """Realiza o cruzamento entre dois individuos."""
-        if np.random.rand() < self.crossover_rate:
-            child = NeuralNetwork()
-            
-            cut_point = np.random.randint(1, parent1.input_hidden_weights.size)
-            
-            child.input_hidden_weights = np.concatenate(
-                (parent1.input_hidden_weights.flat[:cut_point], parent2.input_hidden_weights.flat[cut_point:])
-            ).reshape(parent1.input_hidden_weights.shape)
-            
-            child.fitness = 0
-        else:
-            child = random.choice([parent1, parent2])
+        child = NeuralNetwork()
+        
+        cut_point = np.random.randint(1, parent1.input_hidden_weights.size)
+        
+        child.input_hidden_weights = np.concatenate(
+            (parent1.input_hidden_weights.flat[:cut_point], parent2.input_hidden_weights.flat[cut_point:])
+        ).reshape(parent1.input_hidden_weights.shape)
+        
+        cut_point = np.random.randint(1, parent1.hidden_output_weights.size)
+        
+        child.hidden_output_weights = np.concatenate(
+            (parent1.hidden_output_weights.flat[:cut_point], parent2.hidden_output_weights.flat[cut_point:])
+        ).reshape(parent1.hidden_output_weights.shape)
+        
+        child.fitness = 0
 
         return child
 
