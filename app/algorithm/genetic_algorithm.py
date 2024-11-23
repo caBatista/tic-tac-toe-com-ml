@@ -11,6 +11,7 @@ class GeneticAlgorithm:
         self.mutation_rate = mutation_rate
         self.crossover_rate = crossover_rate
         self.population = []
+        self.initialize_population()
 
     def initialize_population(self):
         """Inicializa a populacao."""
@@ -19,14 +20,12 @@ class GeneticAlgorithm:
             individual.fitness = 0
             self.population.append(individual)
 
-    def calculate_fitness(self, individual, minimax, board_checker, difficulty):
+    def play(self, individual, minimax, board_checker, difficulty):
         """Calcula a aptidao de um individuo."""
         fitness = 0
 
         board = [['b'] * 3 for _ in range(3)]
         player = 'x'
-
-        difficulty_factor = {'easy': .5, 'medium': 1, 'hard': 1.5}[difficulty]
 
         while board_checker.check_status(board) == GameState.NOT_OVER:
             if player == 'x':
@@ -42,21 +41,20 @@ class GeneticAlgorithm:
 
             player = 'o' if player == 'x' else 'x'
 
-            final_state = board_checker.check_status(board)
-            moves = board.count('x') + board.count('o')
+        final_state = board_checker.check_status(board)
+        moves = sum(row.count('x') + row.count('o') for row in board)
 
-            if final_state == GameState.O_WON:
-                fitness = 0
-            elif final_state == GameState.DRAW:
-                fitness = 41
-            elif final_state == GameState.X_WON:
+        if final_state == GameState.O_WON:
+            fitness = 0
+        elif final_state == GameState.DRAW:
+            if difficulty == 'hard':
                 fitness = 91
+            else: 
+                fitness = 41
+        elif final_state == GameState.X_WON:
+            fitness = 91
 
-        fitness += moves
-        fitness *= difficulty_factor
-        max_fitness = 100
-
-        return min(fitness, max_fitness)
+        return fitness + moves
 
     def select_parents(self):
         """Realiza o torneio para selecao dos pais."""
@@ -66,21 +64,18 @@ class GeneticAlgorithm:
 
     def crossover(self, parent1, parent2):
         """Realiza o cruzamento entre dois individuos."""
-        child = NeuralNetwork()
-        
-        cut_point = np.random.randint(1, parent1.input_hidden_weights.size)
-        
-        child.input_hidden_weights = np.concatenate(
-            (parent1.input_hidden_weights.flat[:cut_point], parent2.input_hidden_weights.flat[cut_point:])
-        ).reshape(parent1.input_hidden_weights.shape)
-        
-        cut_point = np.random.randint(1, parent1.hidden_output_weights.size)
-        
-        child.hidden_output_weights = np.concatenate(
-            (parent1.hidden_output_weights.flat[:cut_point], parent2.hidden_output_weights.flat[cut_point:])
-        ).reshape(parent1.hidden_output_weights.shape)
-        
-        child.fitness = 0
+        if np.random.rand() < self.crossover_rate:
+            child = NeuralNetwork()
+            
+            cut_point = np.random.randint(1, parent1.input_hidden_weights.size)
+            
+            child.input_hidden_weights = np.concatenate(
+                (parent1.input_hidden_weights.flat[:cut_point], parent2.input_hidden_weights.flat[cut_point:])
+            ).reshape(parent1.input_hidden_weights.shape)
+            
+            child.fitness = 0
+        else:
+            child = random.choice([parent1, parent2])
 
         return child
 

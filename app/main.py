@@ -8,8 +8,6 @@ def main():
     minimax = Minimax()
     ga = GeneticAlgorithm()
 
-    ga.initialize_population()
-
     print("Iniciando treinamento...")
     train_network(ga, minimax, board_checker, generations=5000)
 

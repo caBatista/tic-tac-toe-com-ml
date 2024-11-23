@@ -15,10 +15,14 @@ class NeuralNetwork:
         self.hidden_bias = np.random.uniform(-1, 1, self.hidden_layer_size)
         self.output_bias = np.random.uniform(-1, 1, self.output_size)
 
+    def sigmoid(self, x):
+        """Função de ativação sigmoide."""
+        return 1 / (1 + np.exp(-x))
+
     def propagation(self, input_data):
         """Realiza a propagacao da rede."""
-        hidden_layer = np.tanh(np.dot(input_data, self.input_hidden_weights) + self.hidden_bias)
-        output_layer = np.tanh(np.dot(hidden_layer, self.hidden_output_weights) + self.output_bias)
+        hidden_layer = self.sigmoid(np.dot(input_data, self.input_hidden_weights) + self.hidden_bias)
+        output_layer = self.sigmoid(np.dot(hidden_layer, self.hidden_output_weights) + self.output_bias)
         return output_layer
 
     def board_to_input(self, board):
