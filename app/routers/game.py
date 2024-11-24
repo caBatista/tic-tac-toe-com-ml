@@ -42,9 +42,9 @@ class PlayMinimax(Resource):
         if(status == GameState.NOT_OVER):
             next_move, used_minimax = minimax.find_next_move(board.board, difficulty)
 
-        return jsonify({"status": status.to_string(), 
-                        "next_move": next_move,
-                        "used_minimax": used_minimax})
+        return jsonify({'status': status.to_string(), 
+                        'next_move': next_move,
+                        'used_minimax': used_minimax})
 
 network_model = api.model('Board', {
     'board': fields.List(fields.List(fields.String, required=True), required=True, description='Board data in JSON format', example=[
@@ -72,5 +72,5 @@ class PlayNetwork(Resource):
         if(status == GameState.NOT_OVER):
             next_move  = network.find_next_move(board.board)
 
-        return jsonify({"status": status.to_string(), 
-                        "next_move": next_move})
+        return jsonify({'status': status.to_string(), 
+                        'next_move': next_move})

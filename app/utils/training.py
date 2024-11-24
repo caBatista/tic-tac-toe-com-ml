@@ -1,70 +1,80 @@
 import csv
-import json
 import multiprocessing
-import random
+import os
 import matplotlib.pyplot as plt
 
+from algorithm.genetic_algorithm import GeneticAlgorithm
+
+ga = GeneticAlgorithm()
+
 def visualize_evolution(avg_fitnesses):
-    """Vizualiza as metricas da evolucao"""
+    '''Vizualiza as metricas da evolucao'''
     plt.figure(figsize=(10, 6))
     plt.plot(avg_fitnesses, label='Média da Aptidão')
-    plt.title("Evolução da Rede")
-    plt.xlabel("Gerações")
-    plt.ylabel("Aptidão Média")
+    plt.title('Evolução da Rede')
+    plt.xlabel('Gerações')
+    plt.ylabel('Aptidão Média')
     plt.legend()
     plt.grid()
     plt.show()
 
 def play_parallel(args):
-    """Calcula a aptidao de um individuo paralelamente"""
-    individual, ga, minimax, board_checker, difficulty = args
-    return ga.play(individual, minimax, board_checker, difficulty)
+    '''Calcula a aptidao de um individuo paralelamente'''
+    individual, ga, difficulty = args
+    return ga.play(individual, difficulty)
 
-def define_difficulty(fitness):
-    if fitness > 80:
-        return random.choices(["hard", "medium"], [0.7, 0.3])[0]
-    elif fitness > 10:
-        return random.choices(["medium", "easy"], [0.8, 0.2])[0]
-    else:
-        return random.choices(["easy", "medium"], [0.8, 0.2])[0]
+def define_difficulty(avg_fitness, current_difficulty):
+    if current_difficulty == 'easy' and avg_fitness >= 0:
+        return 'medium'
+    elif current_difficulty == 'medium' and avg_fitness >= 80:
+        return 'hard'
+    return current_difficulty
 
-def train_network(ga, minimax, board_checker, generations):
-    """Treina a rede neural"""
+def train_network(generations, start_from_scratch=True):
+    '''Treina a rede neural'''
     avg_fitnesses = []
     avg_fitness = -100
     max_fitness = -100
+    min_fitness = 100
+
+    if start_from_scratch:
+        ga.initialize_population()
+        difficulty = 'easy'
+        print('População criada. Iniciando treinamento...')
+    elif not os.path.exists('basic_population.csv'):
+        print('Nenhuma população encontrada. Criando população e iniciando treinamento...')
+        ga.initialize_population()
+        difficulty = 'easy'
+    else:
+        ga.load_population_from_csv('basic_population.csv')
+        avg_fitness = ga.find_avg_fitness()
+        difficulty = 'medium'
+        print('População carregada. Continuando treinamento...')
 
     pool = multiprocessing.Pool()
 
     for generation in range(generations):
         ga.adjust_mutation_rate(generation, generations)
-        difficulty = define_difficulty(avg_fitness)
-        results = pool.map(play_parallel, [(individual, ga, minimax, board_checker, difficulty) for individual in ga.population])
+        difficulty = define_difficulty(avg_fitness, difficulty)
+
+        results = pool.map(play_parallel, [(individual, ga, difficulty) for individual in ga.population])
         for i, fitness in enumerate(results):
             ga.population[i].fitness = fitness
 
         avg_fitness = ga.find_avg_fitness()
         max_fitness = ga.find_max_fitness()
+        min_fitness = ga.find_min_fitness()
         avg_fitnesses.append(avg_fitness)
 
-        print(f"Generation {generation}: AVG = {avg_fitness} | MAX = {max_fitness} | DIFF = {difficulty.upper()}")
+        print(f'Generation {generation}: AVG = {avg_fitness} | MAX = {max_fitness} | MIN = {min_fitness} | DIFF = {difficulty.upper()}')
 
         if avg_fitness > 98:
-            print(f"Stopping training as average fitness exceeded 98 in generation {generation}")
+            print(f'Stopping training as average fitness exceeded 98 in generation {generation}')
             break
+        elif avg_fitness > 40:
+            ga.save_population_to_csv('medium_population.csv')
             
         ga.population = ga.selection()
 
-    weights = []
-    for individual in ga.population:
-        weights.append({
-            'input_hidden_weights': individual.input_hidden_weights.tolist(),
-            'hidden_output_weights': individual.hidden_output_weights.tolist(),
-            'hidden_bias': individual.hidden_bias.tolist(),
-            'output_bias': individual.output_bias.tolist()
-        })
-
-    with open('generation_weights.json', 'w') as jsonfile:
-        json.dump(weights, jsonfile)
-        
     visualize_evolution(avg_fitnesses)
+    ga.save_population_to_csv('best_generation.csv')

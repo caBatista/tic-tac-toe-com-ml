@@ -2,7 +2,7 @@ from models.game_state import GameState
 
 class BoardChecker:
     def check_status(self, board):
-        """Verifica o estado do tabuleiro."""
+        '''Verifica o estado do tabuleiro.'''
         for i in range(3):
             if board[i][0] == board[i][1] == board[i][2] != 'b':
                 return GameState.X_WON if board[i][0] == 'x' else GameState.O_WON

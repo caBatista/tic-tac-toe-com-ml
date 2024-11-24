@@ -4,7 +4,7 @@ player, opponent = 'o', 'x'
 
 class Minimax:
     def is_moves_left(self, board):
-        """Verifica se ainda existem movimentos disponiveis."""
+        '''Verifica se ainda existem movimentos disponiveis.'''
         for i in range(3):
             for j in range(3):
                 if board[i][j] == 'b':
@@ -12,7 +12,7 @@ class Minimax:
         return False
 
     def evaluate(self, b):
-        """Avalia o tabuleiro."""
+        '''Avalia o tabuleiro.'''
         for row in range(3):
             if b[row][0] == b[row][1] and b[row][1] == b[row][2]:
                 if b[row][0] == player:
@@ -42,7 +42,7 @@ class Minimax:
         return 0
 
     def minimax(self, board, depth, is_max):
-        """Algoritmo Minimax."""
+        '''Algoritmo Minimax.'''
         score = self.evaluate(board)
 
         if score == 10:
@@ -74,7 +74,7 @@ class Minimax:
             return best
 
     def find_next_move(self, board, difficulty):
-        """Encontra a proxima jogada."""
+        '''Encontra a proxima jogada.'''
         match difficulty:
             case 'hard': probability = 100
             case 'medium': probability = 50
@@ -87,7 +87,7 @@ class Minimax:
             return self.find_best_move(board), True
 
     def find_best_move(self, board):
-        """Encontra a melhor jogada."""
+        '''Encontra a melhor jogada.'''
         best_val = -1000
         best_move = (-1, -1)
 
@@ -104,7 +104,7 @@ class Minimax:
         return best_move
     
     def find_random_move(self, board):
-        """Encontra uma jogada aleatoria."""
+        '''Encontra uma jogada aleatoria.'''
         available_moves = []
         for i in range(3):
             for j in range(3):

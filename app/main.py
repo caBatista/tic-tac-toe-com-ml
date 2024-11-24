@@ -4,12 +4,7 @@ from algorithm.minimax import Minimax
 from algorithm.genetic_algorithm import GeneticAlgorithm
 
 def main():
-    board_checker = BoardChecker()
-    minimax = Minimax()
-    ga = GeneticAlgorithm()
+    train_network(generations=5000, start_from_scratch=False)
 
-    print("Iniciando treinamento...")
-    train_network(ga, minimax, board_checker, generations=5000)
-
-if __name__ == "__main__":
+if __name__ == '__main__':
     main()
