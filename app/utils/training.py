@@ -29,7 +29,6 @@ def play_parallel(args):
     return ga.play(individual=individual, difficulty=difficulty)
 
 def define_difficulty(avg_fitness, current_difficulty):
-    print(f'AVG = {avg_fitness} | DIFF = {current_difficulty.upper()}')
     if current_difficulty == 'easy' and avg_fitness >= 0:
         return 'medium'
     elif current_difficulty == 'medium' and avg_fitness >= 80:
@@ -174,7 +173,7 @@ def step_training():
 
         moves = sum(row.count(ga.NETWORK_PLAYER) + row.count(ga.MINIMAX_PLAYER) for row in board)
         curr_fitness += 50 / moves
-        avg_fitness = ga.run_generation(difficulty) + curr_fitness / ga.population_size
+        avg_fitness = (ga.run_generation(difficulty) + curr_fitness) / ga.population_size
         training_state['avg_fitness'] = avg_fitness
         
     training_state['curr_fitness'] = curr_fitness
