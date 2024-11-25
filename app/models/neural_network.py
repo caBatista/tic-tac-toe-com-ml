@@ -15,14 +15,14 @@ class NeuralNetwork:
         self.hidden_bias = np.random.uniform(-1, 1, self.hidden_layer_size)
         self.output_bias = np.random.uniform(-1, 1, self.output_size)
 
-    def sigmoid(self, x):
-        '''Função de ativação sigmoide.'''
-        return 1 / (1 + np.exp(-x))
+    def threshold(self, x):
+        '''Função de ativação limiar.'''
+        return np.where(x >= 0, 1, 0)
 
     def propagation(self, input_data):
         """Realiza a propagacao da rede."""
-        hidden_layer = self.sigmoid(np.dot(input_data, self.input_hidden_weights) + self.hidden_bias)
-        output_layer = self.sigmoid(np.dot(hidden_layer, self.hidden_output_weights) + self.output_bias)
+        hidden_layer = self.threshold(np.dot(input_data, self.input_hidden_weights) + self.hidden_bias)
+        output_layer = self.threshold(np.dot(hidden_layer, self.hidden_output_weights) + self.output_bias)
         return output_layer
         
     def board_to_input(self, board):
@@ -38,7 +38,7 @@ class NeuralNetwork:
         return (x, y) if board[x][y] == 'b' else None
         
     def serialize(self):
-        '''Convert the neural network to a list of values for saving to CSV.'''
+        '''Serializa a Rede Neural para salvar no CSV.'''
         return [
             self.input_hidden_weights.tolist(),
             self.hidden_output_weights.tolist(),
@@ -48,7 +48,7 @@ class NeuralNetwork:
 
 
     def deserialize(self, data):
-        '''Load the neural network from a list of values from CSV.'''
+        '''Deserializa a Rede Neural para carregar de um CSV.'''
         self.input_hidden_weights = np.array(ast.literal_eval(data[0]), dtype=float)
         self.hidden_output_weights = np.array(ast.literal_eval(data[1]), dtype=float)
         self.hidden_bias = np.array(ast.literal_eval(data[2]), dtype=float)

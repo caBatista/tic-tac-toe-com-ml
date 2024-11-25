@@ -41,12 +41,12 @@ def train_network(generations, start_from_scratch=True):
         ga.initialize_population()
         difficulty = 'easy'
         print('População criada. Iniciando treinamento...')
-    elif not os.path.exists('basic_population.csv'):
+    elif not os.path.exists('medium_population.csv'):
         print('Nenhuma população encontrada. Criando população e iniciando treinamento...')
         ga.initialize_population()
         difficulty = 'easy'
     else:
-        ga.load_population_from_csv('basic_population.csv')
+        ga.load_population_from_csv('medium_population.csv')
         avg_fitness = ga.find_avg_fitness()
         difficulty = 'medium'
         print('População carregada. Continuando treinamento...')
@@ -54,7 +54,6 @@ def train_network(generations, start_from_scratch=True):
     pool = multiprocessing.Pool()
 
     for generation in range(generations):
-        ga.adjust_mutation_rate(generation, generations)
         difficulty = define_difficulty(avg_fitness, difficulty)
 
         results = pool.map(play_parallel, [(individual, ga, difficulty) for individual in ga.population])
@@ -71,10 +70,8 @@ def train_network(generations, start_from_scratch=True):
         if avg_fitness > 98:
             print(f'Stopping training as average fitness exceeded 98 in generation {generation}')
             break
-        elif avg_fitness > 40:
-            ga.save_population_to_csv('medium_population.csv')
             
-        ga.population = ga.selection()
+        ga.population = ga.selection(generation)
 
     visualize_evolution(avg_fitnesses)
     ga.save_population_to_csv('best_generation.csv')

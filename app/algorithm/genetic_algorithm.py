@@ -1,6 +1,6 @@
-from concurrent.futures import ThreadPoolExecutor
 import csv
 import random
+
 import numpy as np
 
 from algorithm.minimax import Minimax
@@ -20,7 +20,7 @@ class GeneticAlgorithm:
         self.mutation_rate = mutation_rate
         self.crossover_rate = crossover_rate
         self.population = []
-
+        
     def save_population_to_csv(self, file_path):
         '''Save the GA population to a CSV file.'''
         with open(file_path, mode='w', newline='') as file:
@@ -51,7 +51,7 @@ class GeneticAlgorithm:
         '''Calcula a aptidao de um individuo.'''
         fitness = 0
 
-        board = np.full((3, 3), 'b')
+        board = [['b'] * 3 for _ in range(3)]
         player = self.NETWORK_PLAYER
 
         while board_checker.check_status(board) == GameState.NOT_OVER:
@@ -60,171 +60,94 @@ class GeneticAlgorithm:
 
                 if move:
                     board = self.make_move(board, move, player)
-
-                    if difficulty in ('medium', 'hard'):
-                        fitness += self.calculate_fitness_parallel(board, move)
+                    
+                    fitness += self.calculate_fitness(board, move)
+                        
                 else:
-                    return -100
-            else:
+                    fitness = -30
+                    return fitness
+            else: 
                 move, _ = minimax.find_next_move(board, difficulty)
-                board = self.make_move(board, move, player)
 
+            board = self.make_move(board, move, player)
             player = self.MINIMAX_PLAYER if player == self.NETWORK_PLAYER else self.NETWORK_PLAYER
 
         final_state = board_checker.check_status(board)
         if final_state == GameState.X_WON:
-            fitness += 80
+            fitness += 70
         elif final_state == GameState.DRAW:
-            fitness += 40
+            fitness += 30
 
-        moves = np.count_nonzero(board == self.NETWORK_PLAYER) + np.count_nonzero(board == self.MINIMAX_PLAYER)
-        fitness += 10 - moves
+        moves = sum(row.count(self.NETWORK_PLAYER) + row.count(self.MINIMAX_PLAYER) for row in board)
+        fitness += 50 / moves
 
         return min(fitness, 100)
 
-    def calculate_fitness_parallel(self, board, move):
-        with ThreadPoolExecutor() as executor:
-            futures = [
-                executor.submit(self.created_two_in_line, board, move),
-                executor.submit(self.created_multiple_win_paths, board, move),
-                executor.submit(self.played_in_corner, move),
-                executor.submit(self.blocked_oponent_win, board, move),
-                executor.submit(self.created_opponent_win_paths, board, move)
-            ]
-            results = [future.result() for future in futures]
+    def make_move(self, board, move, player):
+        '''Realiza a jogada.'''
+        board[move[0]][move[1]] = player
 
+        return board
+
+    def calculate_fitness(self, board, move):
+        '''Calcula a aptidao de um movimento.'''
         fitness = 0
-        if results[0]:
-            fitness += 3
-        if results[1]:
-            fitness += 5
-        if move == (1, 1):
-            fitness += 2
-        if results[2]:
-            fitness += 2
-        if results[3]:
-            fitness += 8
-        if results[4]:
-            fitness -= 5
+        game_status = board_checker.check_status(board)
+        
+        if game_status == GameState.NOT_OVER:
+            row, col = move
+            player = self.NETWORK_PLAYER
+            opponent = self.MINIMAX_PLAYER
+
+            if (board[row].count(player) == 2 or 
+                [board[i][col] for i in range(3)].count(player) == 2 or 
+                (row == col and [board[i][i] for i in range(3)].count(player) == 2) or 
+                (row + col == 2 and [board[i][2-i] for i in range(3)].count(player) == 2)):
+                fitness += 30
+
+            if (board[row].count(opponent) == 2 or 
+                [board[i][col] for i in range(3)].count(opponent) == 2 or 
+                (row == col and [board[i][i] for i in range(3)].count(opponent) == 2) or 
+                (row + col == 2 and [board[i][2-i] for i in range(3)].count(opponent) == 2)):
+                fitness += 20
+
+            win_paths = 0
+            if board[row].count(player) == 1 and board[row].count(opponent) == 0:
+                win_paths += 1
+            if [board[i][col] for i in range(3)].count(player) == 1 and [board[i][col] for i in range(3)].count(opponent) == 0:
+                win_paths += 1
+            if row == col and [board[i][i] for i in range(3)].count(player) == 1 and [board[i][i] for i in range(3)].count(opponent) == 0:
+                win_paths += 1
+            if row + col == 2 and [board[i][2-i] for i in range(3)].count(player) == 1 and [board[i][2-i] for i in range(3)].count(opponent) == 0:
+                win_paths += 1
+            if win_paths > 1:
+                fitness += 10
+
+            opponent_win_paths = 0
+            if board[row].count(opponent) == 1 and board[row].count(player) == 0:
+                opponent_win_paths += 1
+            if [board[i][col] for i in range(3)].count(opponent) == 1 and [board[i][col] for i in range(3)].count(player) == 0:
+                opponent_win_paths += 1
+            if row == col and [board[i][i] for i in range(3)].count(opponent) == 1 and [board[i][i] for i in range(3)].count(player) == 0:
+                opponent_win_paths += 1
+            if row + col == 2 and [board[i][2-i] for i in range(3)].count(opponent) == 1 and [board[i][2-i] for i in range(3)].count(player) == 0:
+                opponent_win_paths += 1
+            if opponent_win_paths > 1:
+                fitness += 8
+
+            if move == (1, 1):
+                fitness += 5
+
+            if move in [(0, 0), (0, 2), (2, 0), (2, 2)]:
+                fitness += 4
+
+            if move in [(0, 1), (1, 0), (1, 2), (2, 1)]:
+                fitness += 3
 
         return fitness
 
-    def created_two_in_line(self, board, move):
-        row, col = move
-        created = False
-        board[row][col] = self.NETWORK_PLAYER
-        for i in range(3):
-            if np.count_nonzero(board[i] == self.NETWORK_PLAYER) == 2 and np.count_nonzero(board[i] == 'b') == 1:
-                created = True
-                break
-            if np.count_nonzero(board[:, i] == self.NETWORK_PLAYER) == 2 and np.count_nonzero(board[:, i] == 'b') == 1:
-                created = True
-                break
-        if np.count_nonzero(np.diag(board) == self.NETWORK_PLAYER) == 2 and np.count_nonzero(np.diag(board) == 'b') == 1:
-            created = True
-        if np.count_nonzero(np.diag(np.fliplr(board)) == self.NETWORK_PLAYER) == 2 and np.count_nonzero(np.diag(np.fliplr(board)) == 'b') == 1:
-            created = True
-        board[row][col] = 'b'
-        return created
-
-    def created_multiple_win_paths(self, board, move):
-        row, col = move
-        board[row][col] = self.NETWORK_PLAYER
-        paths = 0
-        for i in range(3):
-            if np.count_nonzero(board[i] == self.NETWORK_PLAYER) == 1 and np.count_nonzero(board[i] == 'b') == 2:
-                paths += 1
-            if np.count_nonzero(board[:, i] == self.NETWORK_PLAYER) == 1 and np.count_nonzero(board[:, i] == 'b') == 2:
-                paths += 1
-        if np.count_nonzero(np.diag(board) == self.NETWORK_PLAYER) == 1 and np.count_nonzero(np.diag(board) == 'b') == 2:
-            paths += 1
-        if np.count_nonzero(np.diag(np.fliplr(board)) == self.NETWORK_PLAYER) == 1 and np.count_nonzero(np.diag(np.fliplr(board)) == 'b') == 2:
-            paths += 1
-        board[row][col] = 'b'
-        return paths > 1
-
-    def played_in_corner(self, move):
-        '''Verifica se a jogada foi feita em um dos cantos.'''
-        return move in [(0, 0), (0, 2), (2, 0), (2, 2)]
-
-    def blocked_oponent_win(self, board, nn_move):
-        '''Identifica se a rede bloqueou a vitória do oponente.'''
-        minimax_move, _ = minimax.find_next_move(board, 'hard')
-        row, col = nn_move
-        board[minimax_move[0]][minimax_move[1]] = self.MINIMAX_PLAYER
-        blocked = False
-
-        if board_checker.check_status(board) not in (GameState.NOT_OVER, GameState.DRAW):
-            if minimax_move == nn_move:
-                blocked = True
-
-        board[row][col] = 'b'
-        return blocked
-
-    def created_opponent_win_paths(self, board, move):
-        '''Verifica se a jogada criou caminhos de vitória para o oponente.'''
-        row, col = move
-        board[row][col] = self.NETWORK_PLAYER
-        opponent_paths = 0
-        for i in range(3):
-            if np.count_nonzero(board[i] == self.MINIMAX_PLAYER) == 1 and np.count_nonzero(board[i] == 'b') == 2:
-                opponent_paths += 1
-            if np.count_nonzero(board[:, i] == self.MINIMAX_PLAYER) == 1 and np.count_nonzero(board[:, i] == 'b') == 2:
-                opponent_paths += 1
-        if np.count_nonzero(np.diag(board) == self.MINIMAX_PLAYER) == 1 and np.count_nonzero(np.diag(board) == 'b') == 2:
-            opponent_paths += 1
-        if np.count_nonzero(np.diag(np.fliplr(board)) == self.MINIMAX_PLAYER) == 1 and np.count_nonzero(np.diag(np.fliplr(board)) == 'b') == 2:
-            opponent_paths += 1
-        board[row][col] = 'b'
-        return opponent_paths > 0
-
-    def make_move(self, board, move, player):
-        '''Realiza uma jogada.'''
-        board[move[0]][move[1]] = player
-        return board
-
-    def select_parents(self):
-        '''Realiza o torneio para selecao dos pais.'''
-        tournament = random.sample(self.population, 3)
-        best = max(tournament, key=lambda x: x.fitness)
-        return best
-
-    def crossover(self, parent1, parent2):
-        '''Realiza o cruzamento entre dois individuos.'''
-        child = NeuralNetwork()
-        
-        cut_point = np.random.randint(1, parent1.input_hidden_weights.size)
-        
-        child.input_hidden_weights = np.concatenate(
-            (parent1.input_hidden_weights.flat[:cut_point], parent2.input_hidden_weights.flat[cut_point:])
-        ).reshape(parent1.input_hidden_weights.shape)
-        
-        cut_point = np.random.randint(1, parent1.hidden_output_weights.size)
-        
-        child.hidden_output_weights = np.concatenate(
-            (parent1.hidden_output_weights.flat[:cut_point], parent2.hidden_output_weights.flat[cut_point:])
-        ).reshape(parent1.hidden_output_weights.shape)
-        
-        child.fitness = 0
-
-        return child
-
-    def mutate(self, individual):
-        '''Realiza a mutacao de um individuo.'''
-        if np.random.rand() < self.mutation_rate:
-            individual.input_hidden_weights += np.random.uniform(-1, 1, individual.input_hidden_weights.shape)
-            individual.hidden_output_weights += np.random.uniform(-1, 1, individual.hidden_output_weights.shape)
-        return individual
     
-    def adjust_mutation_rate(self, generation, max_generations):
-        '''Ajusta a taxa de mutacao.'''
-        self.mutation_rate = 0.01 + (0.1 - 0.01) * (1 - generation / max_generations)
-
-    def find_best_individual(self):
-        '''Encontra o melhor individuo da populacao (elitismo).'''
-        return max(self.population, key=lambda x: x.fitness)
-
-    def selection(self):
+    def selection(self, generation):
         '''Realiza a selecao dos individuos (elitismo e torneio).'''
         new_population = []
 
@@ -234,9 +157,74 @@ class GeneticAlgorithm:
             parent1 = self.select_parents()
             parent2 = self.select_parents()
             child = self.crossover(parent1, parent2)
-            new_population.append(self.mutate(child))
+            new_population.append(self.mutate(child, generation))
+
+        new_population = self.maintain_diversity(new_population)
 
         return new_population
+
+    def select_parents(self):
+        '''Realiza o torneio para selecao dos pais.'''
+        tournament = random.sample(self.population, 3)
+        best = max(tournament, key=lambda x: x.fitness)
+        return best
+
+    def crossover(self, parent1, parent2):
+        '''Realiza o cruzamento uniforme entre dois individuos.'''
+        child = NeuralNetwork()
+        
+        # Uniform crossover
+        mask = np.random.rand(*parent1.input_hidden_weights.shape) > 0.5
+        child.input_hidden_weights = np.where(mask, parent1.input_hidden_weights, parent2.input_hidden_weights)
+        
+        mask = np.random.rand(*parent1.hidden_output_weights.shape) > 0.5
+        child.hidden_output_weights = np.where(mask, parent1.hidden_output_weights, parent2.hidden_output_weights)
+        
+        child.fitness = 0
+        return child
+
+    def mutate(self, individual, generation):
+        '''Realiza a mutacao de um individuo.'''
+        if np.random.rand() < self.mutation_rate:
+            mutation_strength = np.random.uniform(-0.5, 0.5, individual.input_hidden_weights.shape) * (1 / (generation + 1))
+            individual.input_hidden_weights += mutation_strength
+            
+            mutation_strength = np.random.uniform(-0.5, 0.5, individual.hidden_output_weights.shape) * (1 / (generation + 1))
+            individual.hidden_output_weights += mutation_strength
+            
+        return individual
+    
+    def maintain_diversity(self, population):
+        '''Mantem a diversidade na populacao, garantindo que todos os individuos sejam unicos.'''
+        unique_individuals = []
+        seen = set()
+
+        for ind in population:
+            weights_tuple = (tuple(ind.input_hidden_weights.flatten()), tuple(ind.hidden_output_weights.flatten()))
+            if weights_tuple not in seen:
+                seen.add(weights_tuple)
+                unique_individuals.append(ind)
+
+        while len(unique_individuals) < self.population_size:
+            new_individual = self.create_random_individual()
+            weights_tuple = (tuple(new_individual.input_hidden_weights.flatten()), tuple(new_individual.hidden_output_weights.flatten()))
+            if weights_tuple not in seen:
+                seen.add(weights_tuple)
+                unique_individuals.append(new_individual)
+
+        return unique_individuals
+
+    def create_random_individual(self):
+        '''Cria um novo individuo aleatorio.'''
+        new_individual = NeuralNetwork()
+        new_individual.input_hidden_weights = np.random.uniform(-1, 1, new_individual.input_hidden_weights.shape)
+        new_individual.hidden_output_weights = np.random.uniform(-1, 1, new_individual.hidden_output_weights.shape)
+        new_individual.fitness = 0
+        return new_individual
+
+    def find_best_individual(self):
+        '''Encontra o melhor individuo da populacao (elitismo).'''
+        return max(self.population, key=lambda x: x.fitness)
 
     def find_avg_fitness(self):
         '''Calcula a aptidao media da populacao.'''
@@ -249,3 +237,4 @@ class GeneticAlgorithm:
     def find_min_fitness(self):
         '''Encontra a menor aptidao da populacao.'''
         return min([individual.fitness for individual in self.population])
+    
