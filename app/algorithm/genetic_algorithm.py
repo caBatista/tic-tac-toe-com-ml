@@ -53,14 +53,16 @@ class GeneticAlgorithm:
 
         for _ in range(games_per_generation):
             fitness = 0
-            board = self.generate_random_board()
+            board = [['b'] * 3 for _ in range(3)]
             player = self.NETWORK_PLAYER
 
             while board_checker.check_status(board) == GameState.NOT_OVER:
                 if player == self.NETWORK_PLAYER:
                     move = individual.find_next_move(board)
 
-                    if move:
+                    row, col = move
+
+                    if board[row][col] != 'b':
                         board = self.make_move(board, move, player)
                         fitness += self.calculate_fitness(board, move)
                     else:
@@ -86,6 +88,17 @@ class GeneticAlgorithm:
             total_fitness += min(fitness, 100)
 
         return total_fitness / games_per_generation
+
+    def run_generation(self, difficulty):
+        '''Roda uma geração exceto pelo melhor individuo.'''
+        total_fitness = 0
+
+        filtered_population = list(filter(lambda x: x != self.find_best_individual(), self.population))
+
+        for individual in filtered_population:
+            total_fitness += self.play(individual, difficulty, 1)
+
+        return total_fitness
 
     def make_move(self, board, move, player):
         '''Realiza a jogada.'''
@@ -239,15 +252,6 @@ class GeneticAlgorithm:
         new_individual.hidden_output_weights = np.random.uniform(-1, 1, new_individual.hidden_output_weights.shape)
         new_individual.fitness = 0
         return new_individual
-
-    def generate_random_board(self):
-        board = [['b'] * 3 for _ in range(3)]
-        moves = random.randint(0, 5)  # Número aleatório de jogadas já feitas
-        for _ in range(moves):
-            x, y = random.choice([(i, j) for i in range(3) for j in range(3) if board[i][j] == 'b'])
-            board[x][y] = random.choice(['x', 'o'])
-        return board
-
 
     def find_best_individual(self):
         '''Encontra o melhor individuo da populacao (elitismo).'''

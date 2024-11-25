@@ -4,7 +4,7 @@ from algorithm.minimax import Minimax
 from algorithm.genetic_algorithm import GeneticAlgorithm
 
 def main():
-    train_network(generations=5000, start_from_file='basic_population.csv')
+    train_network(generations=5000)
 
 if __name__ == '__main__':
     main()

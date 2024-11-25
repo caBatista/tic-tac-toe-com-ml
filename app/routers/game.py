@@ -1,17 +1,19 @@
+from flask_restx import Namespace, Resource, fields
 from flask import jsonify
 from pydantic import ValidationError
-from app.models.neural_network import NeuralNetwork
+from models.neural_network import NeuralNetwork
+from utils.training import initialize_training, step_training
 from models.game_state import GameState
-from app.algorithm.minimax import Minimax
 from models.board import Board
 from utils.board_checker import BoardChecker
-from flask_restx import Namespace, Resource, fields
+from algorithm.minimax import Minimax
 
 api = Namespace('game', description='Operações com o jogo da velha')
 
 checker = BoardChecker()
 minimax = Minimax()
-network = NeuralNetwork().load_network_from_file('PATH_TO_FILE')
+trained_network = NeuralNetwork().load_from_csv('best_individual.csv')
+untrained_network = NeuralNetwork()
 
 minimax_model = api.model('Board', {
     'board': fields.List(fields.List(fields.String, required=True), required=True, description='Board data in JSON format', example=[
@@ -70,7 +72,14 @@ class PlayNetwork(Resource):
         next_move = None
 
         if(status == GameState.NOT_OVER):
-            next_move  = network.find_next_move(board.board)
+            next_move  = trained_network.find_next_move(board.board)
 
-        return jsonify({'status': status.to_string(), 
-                        'next_move': next_move})
+            row, col = next_move
+            if(board.board[row][col] == 'b'):
+                status = GameState.CORRUPTED
+
+        return jsonify({
+            'status': status.to_string(),
+            'next_move': (int(next_move[0]), int(next_move[1]))
+        })
+    

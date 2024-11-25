@@ -5,6 +5,7 @@ class GameState(Enum):
     X_WON = 1
     O_WON = 2
     DRAW = 3
+    CORRUPTED = 4
 
     def to_string(self):
         '''Retorna o estado em string.'''
@@ -16,3 +17,5 @@ class GameState(Enum):
             return 'DRAW'
         elif self == GameState.NOT_OVER:
             return 'NOT_OVER'
+        elif self == GameState.CORRUPTED:
+            return 'CORRUPTED'

@@ -1,6 +1,7 @@
 from flask import Flask
-from flask_restx import Api, Resource
+from flask_restx import Api
 from routers.game import api as game_ns
+from routers.training import api as training_ns
 from flask_cors import CORS
 
 app = Flask(__name__)
@@ -10,6 +11,7 @@ api = Api(app,
           description='Trabalho prático da disciplina de Inteligência Artificial.',
           doc='/docs') 
 api.add_namespace(game_ns, path='/game')
+api.add_namespace(training_ns, path='/training')
 
 CORS(app, resources={r'/*': {'origins': '*'}})
 

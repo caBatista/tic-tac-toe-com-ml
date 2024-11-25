@@ -1,4 +1,5 @@
 import ast
+import csv
 import numpy as np
 
 class NeuralNetwork:
@@ -33,17 +34,31 @@ class NeuralNetwork:
         output_data = self.propagation(input_data)
         play = np.argmax(output_data)
         x, y = divmod(play, 3)
-        return (x, y) if board[x][y] == 'b' else None
+        return (x, y)
         
+    def save_to_csv(self, filename):
+        '''Salva a Rede Neural em um CSV.'''
+        with open(filename, 'w', newline='') as file:
+            writer = csv.writer(file)
+            writer.writerow(self.serialize())
+
+    def load_from_csv(self, filename):
+        '''Carrega a Rede Neural de um CSV.'''
+        with open(filename, 'r') as file:
+            reader = csv.reader(file)
+            for row in reader:
+                self.deserialize(row)
+        
+        return self
+
     def serialize(self):
         '''Serializa a Rede Neural para salvar no CSV.'''
         return [
-            self.input_hidden_weights.tolist(),
-            self.hidden_output_weights.tolist(),
-            self.hidden_bias.tolist(),
-            self.output_bias.tolist()
+            str(self.input_hidden_weights.tolist()),
+            str(self.hidden_output_weights.tolist()),
+            str(self.hidden_bias.tolist()),
+            str(self.output_bias.tolist())
         ]
-
 
     def deserialize(self, data):
         '''Deserializa a Rede Neural para carregar de um CSV.'''
