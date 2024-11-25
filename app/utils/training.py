@@ -166,8 +166,6 @@ def step_training():
         board = ga.make_move(board, move, player)
         board_state = board_checker.check_status(board)
 
-    print(board_state)
-
     if board_state != GameState.NOT_OVER:
         if board_state == GameState.X_WON:
             curr_fitness += 70
