@@ -75,7 +75,7 @@ class PlayNetwork(Resource):
             next_move  = trained_network.find_next_move(board.board)
 
             row, col = next_move
-            if(board.board[row][col] == 'b'):
+            if(board.board[row][col] != 'b'):
                 status = GameState.CORRUPTED
 
         return jsonify({

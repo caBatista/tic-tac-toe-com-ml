@@ -47,7 +47,7 @@ class GeneticAlgorithm:
             individual.fitness = 0
             self.population.append(individual)
 
-    def play(self, individual, difficulty, games_per_generation=5):
+    def play(self, individual, difficulty, games_per_generation=1):
         '''Calcula a aptidao de um individuo com base em multiplos jogos.'''
         total_fitness = 0
 
@@ -62,7 +62,7 @@ class GeneticAlgorithm:
 
                     row, col = move
 
-                    if board[row][col] != 'b':
+                    if board[row][col] == 'b':
                         board = self.make_move(board, move, player)
                         fitness += self.calculate_fitness(board, move)
                     else:
@@ -75,7 +75,7 @@ class GeneticAlgorithm:
 
             final_state = board_checker.check_status(board)
             if final_state == GameState.NOT_OVER:
-                total_fitness -= 1000
+                total_fitness -= 30
                 continue
             elif final_state == GameState.X_WON:
                 fitness += 70
