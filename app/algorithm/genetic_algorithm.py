@@ -200,7 +200,6 @@ class GeneticAlgorithm:
         '''Realiza o cruzamento uniforme entre dois individuos.'''
         child = NeuralNetwork()
         
-        # Uniform crossover
         mask = np.random.rand(*parent1.input_hidden_weights.shape) > 0.5
         child.input_hidden_weights = np.where(mask, parent1.input_hidden_weights, parent2.input_hidden_weights)
         
