@@ -103,11 +103,10 @@ class Minimax:
 
         return best_move
     
-    def find_random_move(self, board):
-        '''Encontra uma jogada aleatoria.'''
-        available_moves = []
-        for i in range(3):
-            for j in range(3):
-                if board[i][j] == 'b':
-                    available_moves.append((i, j))
-        return random.choice(available_moves)
+    def find_random_move(board):
+        n, m = len(board), len(board[0])
+        for _ in range(n*m):              # safety cap; worst-case tries = n*m
+            i, j = random.randrange(n), random.randrange(m)
+            if board[i][j] == 'b':
+                return (i, j)
+        raise ValueError("No blank squares left")
